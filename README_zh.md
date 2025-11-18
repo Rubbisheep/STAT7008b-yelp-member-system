@@ -5,7 +5,7 @@
 ### 概览
 管理页与注册页示意：
 
-![Admin 页面](static/image.png)
+![Admin 页面](pics/admin.png)
 ![注册页面](pics/register.png)
 
 ## 环境要求

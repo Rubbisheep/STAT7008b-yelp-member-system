@@ -15,7 +15,7 @@ End-to-end pipeline: schema -> simulate data -> class library -> text mining stu
 ### Overview
 Visuals of the admin and registration pages:
 
-![Admin Page](static/image.png)
+![Admin Page](pics/admin.png)
 ![Register Page](pics/register.png)
 
 ### Prerequisites
