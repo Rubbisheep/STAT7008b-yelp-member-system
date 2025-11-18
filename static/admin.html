@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Music App - Admin Dashboard</title>
+  <style>
+    :root { color-scheme: light; font-family: Arial, sans-serif; }
+    body { margin: 0; background: #f6f7fb; color: #111; }
+    header { padding: 16px 24px; background: #1f2937; color: #fff; }
+    h1 { margin: 0; font-size: 22px; }
+    main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+    .card { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 8px 20px rgba(17, 24, 39, 0.08); }
+    .card h2 { margin: 0 0 12px 0; font-size: 18px; }
+    img { max-width: 100%; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .note { margin-top: 24px; font-size: 14px; color: #4b5563; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Admin Dashboard</h1>
+  </header>
+  <main>
+    <div class="grid">
+      <div class="card">
+        <h2>Registration Trend</h2>
+        <img src="../outputs/register_trend.png" alt="Registration Trend" />
+      </div>
+      <div class="card">
+        <h2>Daily Active Users (DAU)</h2>
+        <img src="../outputs/dau.png" alt="DAU" />
+      </div>
+      <div class="card">
+        <h2>Favorite Genres</h2>
+        <img src="../outputs/fav_genres.png" alt="Favorite Genres" />
+      </div>
+      <div class="card">
+        <h2>Member vs Non-member</h2>
+        <img src="../outputs/member_vs_non.png" alt="Member vs Non-member" />
+      </div>
+      <div class="card">
+        <h2>User Segments</h2>
+        <img src="../outputs/segments.png" alt="User Segments" />
+      </div>
+    </div>
+    <div class="note">
+      Tip: run <code>python scripts/generate_dashboard.py</code> to refresh these figures after new data is loaded.
+    </div>
+  </main>
+</body>
+</html>

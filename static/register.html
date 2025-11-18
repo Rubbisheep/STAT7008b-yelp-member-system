@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join Music App</title>
+  <style>
+    :root { color-scheme: light; font-family: Arial, sans-serif; }
+    body { margin: 0; min-height: 100vh; background: linear-gradient(135deg, #f9fafb, #e5e7eb); display: flex; justify-content: center; align-items: center; padding: 20px; }
+    .card { background: #fff; border-radius: 12px; padding: 24px; width: 100%; max-width: 520px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1); }
+    h1 { margin: 0 0 8px 0; font-size: 24px; }
+    p { margin: 0 0 16px 0; color: #4b5563; font-size: 14px; }
+    label { display: block; margin: 12px 0 6px; font-weight: 600; color: #111827; }
+    input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+    textarea { min-height: 80px; }
+    button { margin-top: 16px; width: 100%; padding: 12px 14px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 15px; cursor: pointer; }
+    button:hover { background: #1d4ed8; }
+    .msg { margin-top: 12px; font-size: 14px; color: #10b981; display: none; }
+    .error { color: #dc2626; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Create your account</h1>
+    <p>Tell us a bit about you to personalize recommendations.</p>
+    <form id="register-form">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" placeholder="name@example.com" required />
+
+      <label for="phone">Phone</label>
+      <input id="phone" name="phone" type="tel" placeholder="+1 555 123 4567" />
+
+      <label for="nickname">Nickname</label>
+      <input id="nickname" name="nickname" type="text" placeholder="Your display name" required />
+
+      <label for="gender">Gender</label>
+      <select id="gender" name="gender">
+        <option value="">Prefer not to say</option>
+        <option value="M">Male</option>
+        <option value="F">Female</option>
+        <option value="O">Other</option>
+      </select>
+
+      <label for="birth_year">Birth year</label>
+      <input id="birth_year" name="birth_year" type="number" min="1940" max="2024" />
+
+      <label for="region">Region</label>
+      <input id="region" name="region" type="text" placeholder="City / State" />
+
+      <label for="fav_genres">Favorite genres</label>
+      <input id="fav_genres" name="fav_genres" type="text" placeholder="pop,rock,jazz" />
+
+      <label for="fav_scenes">Favorite scenes</label>
+      <input id="fav_scenes" name="fav_scenes" type="text" placeholder="study,workout,commute" />
+
+      <label for="extra_info">What do you expect from music?</label>
+      <textarea id="extra_info" name="extra_info" placeholder="Focus, relax, discover new artists..."></textarea>
+
+      <button type="submit">Sign up</button>
+      <div id="success" class="msg">Submitted! Hook this form to your backend to persist.</div>
+      <div id="error" class="msg error"></div>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById("register-form");
+    const success = document.getElementById("success");
+    const error = document.getElementById("error");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      success.style.display = "none";
+      error.style.display = "none";
+
+      const payload = Object.fromEntries(new FormData(form).entries());
+
+      // TODO: replace with your backend endpoint
+      // Example (uncomment and set URL):
+      // const resp = await fetch("/api/register", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify(payload),
+      // });
+      // if (!resp.ok) throw new Error("Failed to register");
+
+      console.log("Collected form payload:", payload);
+      success.textContent = "Submitted! Hook this form to your backend to persist.";
+      success.style.display = "block";
+    });
+  </script>
+</body>
+</html>
