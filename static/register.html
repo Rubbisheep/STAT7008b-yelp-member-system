@@ -57,7 +57,7 @@
       <textarea id="extra_info" name="extra_info" placeholder="Focus, relax, discover new artists..."></textarea>
 
       <button type="submit">Sign up</button>
-      <div id="success" class="msg">Submitted! Hook this form to your backend to persist.</div>
+      <div id="success" class="msg">Submitted!</div>
       <div id="error" class="msg error"></div>
     </form>
   </div>
@@ -67,6 +67,8 @@
     const success = document.getElementById("success");
     const error = document.getElementById("error");
 
+    const API_BASE = (location.port === "8000") ? "http://localhost:8001" : "";
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       success.style.display = "none";
@@ -74,18 +76,20 @@
 
       const payload = Object.fromEntries(new FormData(form).entries());
 
-      // TODO: replace with your backend endpoint
-      // Example (uncomment and set URL):
-      // const resp = await fetch("/api/register", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(payload),
-      // });
-      // if (!resp.ok) throw new Error("Failed to register");
-
-      console.log("Collected form payload:", payload);
-      success.textContent = "Submitted! Hook this form to your backend to persist.";
-      success.style.display = "block";
+      try {
+        const resp = await fetch(`${API_BASE}/api/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!resp.ok) throw new Error(await resp.text());
+        const data = await resp.json();
+        success.textContent = `Submitted! user_id=${data.user_id}`;
+        success.style.display = "block";
+      } catch (err) {
+        error.textContent = `Failed: ${err}`;
+        error.style.display = "block";
+      }
     });
   </script>
 </body>
