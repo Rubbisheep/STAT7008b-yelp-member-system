@@ -1,60 +1,47 @@
-# 音乐会员分析项目
+# 音乐会员分析
 
-端到端流程：建表 -> 模拟数据 -> 程序类库 -> 文本挖掘占位 -> 看板 -> 静态页面 + API。
+[English](README.md) | [中文](README_zh.md)
 
-### 概览
-管理页与注册页示意：
+端到端示例：建库 → 模拟用户/行为数据 → 简易文本挖掘钩子 → 看板 → 静态页 + FastAPI。
 
+管理端与注册页：
 ![Admin 页面](pics/admin.png)
 ![注册页面](pics/register.png)
 
-## 环境要求
-- Python 3.9+（推荐 Anaconda `workingenvs` 环境）
-- 无需外部数据库（内置 SQLite）
+## 环境准备
+- Python 3.9+
+- 仓库根目录执行：
+  ```bash
+  python -m venv .venv
+  .venv/Scripts/activate
+  pip install -r requirements.txt
+  ```
 
-## 快速开始（仓库根目录运行）
-```bash
-# 0）创建/激活虚拟环境并安装依赖
-python -m venv .venv
-.venv/Scripts/activate
-pip install -r requirements.txt
+## 跑通流程（仓库根目录）
 
-# 1）初始化数据库
-python scripts/init_db.py
+1）注册新用户、写日志、补全画像：  
+`python -m scripts.demo`
 
-# 2）模拟数据（用户、偏好、听歌日志、反馈、分群）
-python -m scripts.simulate_data
+2）产出图表到 `outputs/`：  
+`python -m scripts.generate_dashboard`
 
-# 3）Demo（注册新用户 -> 行为日志 -> 文本挖掘 -> 分群）
-python -m scripts.demo
+3）启动 API 并打开页面：  
+`uvicorn api.server:app --reload --port 8001`  
+访问 `http://localhost:8001/static/admin.html`（管理与操作）和 `http://localhost:8001/static/register.html`（用户注册）。
 
-# 4）生成看板图表（PNG 输出到 outputs/）
-python scripts/generate_dashboard.py
+## 目录速览
+- `schema.sql` — 表结构（核心 + 分群/主题）
+- `src/music_app_system.py` — 注册、会员、日志、统计钩子、分群的核心类
+- `src/text_mining.py` — 关键词/MBTI/分群占位规则
+- `scripts/init_db.py` — 创建 SQLite 数据库
+- `scripts/simulate_data.py` — 刷新随机用户、偏好、听歌日志、反馈
+- `scripts/demo.py` — 单用户端到端演示
+- `scripts/generate_dashboard.py` — 生成 DAU、增长、分群占比、活跃热力、留存 PNG
+- `api/server.py` — FastAPI 后端（注册/搜索/动作：init、simulate、dashboard）
+- `static/admin.html` — 管理端（展示 PNG、查用户、触发动作并轮询状态）
+- `static/register.html` — 注册页
 
-# 5）启动后端 API（FastAPI）
-uvicorn api.server:app --reload --port 8001
-
-# 6）查看静态页面（本地起一个 server，比如 8000）
-python -m http.server 8000
-# 打开 http://localhost:8000/static/admin.html
-# 打开 http://localhost:8000/static/register.html
-```
-
-## 目录说明
-- `schema.sql` - 表结构（核心 + 可选分群/主题）
-- `requirements.txt` - 依赖
-- `src/music_app_system.py` - 核心类：注册/登录、会员、日志、统计、文本钩子、分群写回
-- `src/text_mining.py` - 轻量关键词/MBTI/分群规则（占位实现）
-- `scripts/init_db.py` - 创建 `data/music.db`
-- `scripts/simulate_data.py` - 模拟约 800 用户，偏好，5-200 次听歌/人，0-3 条反馈/人，并自动分群
-- `scripts/demo.py` - 新用户全流程演示
-- `scripts/generate_dashboard.py` - 生成 DAU、注册趋势、偏好、会员对比、分群图表 -> `outputs/`
-- `api/server.py` - FastAPI 后端（注册/搜索/动作：init_db、simulate_data、generate_dashboard、status）
-- `static/admin.html` - 管理端页面（展示 PNG、查用户、触发动作并轮询状态）
-- `static/register.html` - 用户注册表单（POST 到 `/api/register`）
-
-## 备注与排查
-- 导入报错时，用 `python -m scripts.xxx` 在仓库根目录运行，确保能找到 `src`
-- 时间戳含小数秒，生成图表时已用 `errors="coerce"` 容错
-- 重置数据：先跑 `init_db.py`（如需清库），再跑 `-m scripts.simulate_data`
-- 静态页默认在 8000 服务、API 在 8001；如有反向代理，可通过 `window.API_BASE` 覆盖
+## 小贴士
+- 用模块方式运行脚本（`python -m scripts.xxx`），保证能找到 `src`。
+- 需要重置数据时：先 `python -m scripts.init_db`，再 `python -m scripts.simulate_data`。
+- 如前端放在其他域/端口，可在 HTML 里设置 `window.API_BASE` 指向实际 API。

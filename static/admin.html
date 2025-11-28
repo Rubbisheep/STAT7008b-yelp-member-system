@@ -1,177 +1,347 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Music App - Admin Dashboard</title>
+  <title>Rhythm Admin | Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            dark: { 900: '#0f172a', 800: '#1e293b', 700: '#334155' },
+            brand: { 500: '#6366f1', 600: '#4f46e5' }
+          }
+        }
+      }
+    }
+  </script>
   <style>
-    :root { color-scheme: light; font-family: Arial, sans-serif; }
-    body { margin: 0; background: #f6f7fb; color: #111; }
-    header { padding: 16px 24px; background: #1f2937; color: #fff; }
-    h1 { margin: 0; font-size: 22px; }
-    main { padding: 20px; max-width: 1200px; margin: 0 auto; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
-    .card { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 8px 20px rgba(17, 24, 39, 0.08); }
-    .card h2 { margin: 0 0 12px 0; font-size: 18px; }
-    img { max-width: 100%; border-radius: 8px; border: 1px solid #e5e7eb; }
-    .note { margin-top: 24px; font-size: 14px; color: #4b5563; }
+    body { background-color: #0f172a; color: #e2e8f0; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; transition: all 0.3s; }
+    .card:hover { border-color: #6366f1; box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.2); }
+
+    .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.6; transform: none; cursor: not-allowed; }
+
+    .btn-secondary { background: transparent; border: 1px solid #475569; color: #cbd5e1; }
+    .btn-secondary:hover:not(:disabled) { background: #334155; border-color: #64748b; }
+    .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .glass-nav { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #334155; }
+
+    /* 滚动条 */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+
+    .chart-box { min-height: 200px; display: flex; align-items: center; justify-content: center; background: #0f172a; border-radius: 0.5rem; overflow: hidden; position: relative; }
+
+    /* 图片样式：增加鼠标手势和过渡 */
+    .chart-box img {
+        width: 100%; height: 100%; object-fit: contain;
+        cursor: zoom-in;
+        transition: transform 0.2s;
+    }
+    .chart-box img:hover { transform: scale(1.02); opacity: 0.9; }
+
+    /* Lightbox 动画 */
+    #lightbox { transition: opacity 0.3s ease; }
+    #lightbox.hidden { opacity: 0; pointer-events: none; }
+    #lightbox:not(.hidden) { opacity: 1; pointer-events: auto; }
   </style>
 </head>
-<body>
-  <header>
-    <h1>Admin Dashboard</h1>
-  </header>
-  <main>
-    <div class="grid">
-      <div class="card">
-        <h2>Registration Trend</h2>
-        <img src="../outputs/register_trend.png" alt="Registration Trend" />
-      </div>
-      <div class="card">
-        <h2>Daily Active Users (DAU)</h2>
-        <img src="../outputs/dau.png" alt="DAU" />
-      </div>
-      <div class="card">
-        <h2>Favorite Genres</h2>
-        <img src="../outputs/fav_genres.png" alt="Favorite Genres" />
-      </div>
-      <div class="card">
-        <h2>Member vs Non-member</h2>
-        <img src="../outputs/member_vs_non.png" alt="Member vs Non-member" />
-      </div>
-      <div class="card">
-        <h2>User Segments</h2>
-        <img src="../outputs/segments.png" alt="User Segments" />
-      </div>
-      <style>
-        .result-card { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:10px; margin-top:8px; }
-        .result-card h3 { margin:0 0 6px 0; font-size:16px; }
-        .result-meta { font-size:12px; color:#6b7280; margin-bottom:4px; }
-        .badge { display:inline-block; padding:2px 6px; border-radius:6px; font-size:11px; background:#e0e7ff; color:#1e3a8a; margin-right:6px; }
-        .field { font-size:13px; margin:2px 0; }
-        .field strong { color:#111827; }
-      </style>
-      <div class="card">
-        <h2>User Lookup</h2>
-        <form id="user-form">
-          <label for="user-query-input" style="display:block;font-size:14px;margin-bottom:6px;color:#374151;">Search nickname / email / phone</label>
-          <input id="user-query-input" type="text" placeholder="e.g. Alice or alice@example.com" style="width:100%;padding:10px;border-radius:8px;border:1px solid #d1d5db;box-sizing:border-box;margin-bottom:10px;" />
-          <button type="submit" style="width:100%;padding:10px;border:none;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer;">Search</button>
-        </form>
-        <div id="user-result" style="margin-top:12px;max-height:280px;overflow:auto;"></div>
-        <div style="margin-top:8px;font-size:12px;color:#6b7280;">Uses <code>GET /api/users/search?q=</code> to query SQLite via backend.</div>
-      </div>
-      <div class="card">
-        <h2>Data Actions</h2>
-        <button id="btn-init" style="width:100%;padding:10px;border:none;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer;margin-bottom:8px;">Init DB</button>
-        <button id="btn-sim" style="width:100%;padding:10px;border:none;border-radius:8px;background:#16a34a;color:#fff;cursor:pointer;margin-bottom:8px;">Simulate Data</button>
-        <button id="btn-gen" style="width:100%;padding:10px;border:none;border-radius:8px;background:#f59e0b;color:#fff;cursor:pointer;">Generate Dashboard</button>
-        <pre id="actions-log" style="margin-top:12px;background:#f3f4f6;padding:10px;border-radius:8px;max-height:180px;overflow:auto;font-size:13px;">Use these to trigger backend scripts.</pre>
+<body class="h-screen flex overflow-hidden">
+
+  <div id="lightbox" class="fixed inset-0 z-50 bg-black/90 hidden flex items-center justify-center p-4 backdrop-blur-sm" onclick="closeLightbox()">
+    <div class="relative max-w-7xl max-h-full">
+        <img id="lightbox-img" src="" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl border border-slate-700">
+        <button class="absolute -top-10 right-0 text-white text-3xl hover:text-brand-500 transition" onclick="closeLightbox()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <p class="text-center text-slate-400 mt-2 text-sm">Click anywhere to close</p>
+    </div>
+  </div>
+
+  <aside class="w-64 bg-slate-900 border-r border-slate-800 flex-col hidden md:flex z-20">
+    <div class="h-16 flex items-center px-6 border-b border-slate-800">
+      <i class="fa-solid fa-wave-square text-brand-500 text-2xl mr-3"></i>
+      <span class="font-bold text-xl tracking-wider text-white">RHYTHM</span>
+    </div>
+    <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+      <div class="text-xs font-bold text-slate-500 uppercase px-3 mt-4 mb-2">Main</div>
+      <a href="#" class="flex items-center px-4 py-3 bg-brand-600 text-white rounded-xl shadow-lg shadow-indigo-900/50">
+        <i class="fa-solid fa-chart-simple w-6"></i> Dashboard
+      </a>
+      <a href="#inspector" class="flex items-center px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition">
+        <i class="fa-solid fa-users-viewfinder w-6"></i> Inspector
+      </a>
+    </nav>
+    <div class="p-4 border-t border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-500"></div>
+        <div>
+          <div class="text-sm font-bold text-white">Admin</div>
+          <div class="text-xs text-emerald-400">● Online</div>
+        </div>
       </div>
     </div>
-    <div class="note">
-      Tip: run <code>python scripts/generate_dashboard.py</code> to refresh these figures after new data is loaded.
+  </aside>
+
+  <main class="flex-1 flex flex-col relative">
+    <header class="glass-nav h-16 flex items-center justify-between px-8 z-10">
+      <h1 class="text-lg font-bold text-slate-200">Analytics Overview</h1>
+      <div class="flex gap-4">
+        <button class="w-10 h-10 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition flex items-center justify-center">
+          <i class="fa-regular fa-bell"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="flex-1 overflow-y-auto p-8 space-y-8 scroll-smooth">
+
+      <section class="card p-6 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-brand-500 rounded-full mix-blend-overlay filter blur-3xl opacity-10 pointer-events-none"></div>
+        <div class="flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
+          <div>
+            <h2 class="text-xl font-bold text-white">Simulation Center</h2>
+            <p class="text-slate-400 text-sm mt-1">Control the synthetic data pipeline. <span class="text-amber-400">Warning: Generating 3k users may take 10-20 seconds.</span></p>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button onclick="triggerTask('init_db', this)" class="btn-secondary px-5 py-2.5 rounded-lg transition flex items-center gap-2">
+              <i class="fa-solid fa-rotate-left"></i> Reset DB
+            </button>
+            <button onclick="triggerTask('simulate_data', this)" class="btn-secondary px-5 py-2.5 rounded-lg transition flex items-center gap-2">
+              <i class="fa-solid fa-robot text-emerald-400"></i> Simulate Users (3k)
+            </button>
+            <button onclick="triggerTask('generate_dashboard', this)" class="btn-primary px-6 py-2.5 rounded-lg shadow-lg shadow-indigo-500/30 transition flex items-center gap-2 font-medium">
+              <i class="fa-solid fa-chart-pie"></i> Generate Reports
+            </button>
+          </div>
+        </div>
+        <div id="console-log" class="mt-6 p-4 bg-black/30 rounded-lg font-mono text-xs text-slate-400 hidden border-l-2 border-brand-500 max-h-40 overflow-y-auto"></div>
+      </section>
+
+      <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div class="card p-5">
+          <div class="flex justify-between mb-4">
+            <h3 class="font-bold text-slate-300">User Growth</h3>
+            <i class="fa-solid fa-arrow-trend-up text-emerald-400"></i>
+          </div>
+          <div class="chart-box">
+            <img id="chart-trend" src="/outputs/register_trend.png" onclick="openLightbox(this.src)" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'text-slate-600 text-xs flex flex-col items-center\'><i class=\'fa-solid fa-image mb-2 text-2xl\'></i><span>Run Generate Reports</span></div>'">
+          </div>
+        </div>
+
+        <div class="card p-5">
+          <div class="flex justify-between mb-4">
+            <h3 class="font-bold text-slate-300">Active Users (DAU)</h3>
+            <i class="fa-solid fa-users text-amber-400"></i>
+          </div>
+          <div class="chart-box">
+            <img id="chart-dau" src="/outputs/dau.png" onclick="openLightbox(this.src)" onerror="this.style.display='none'">
+          </div>
+        </div>
+
+        <div class="card p-5">
+          <div class="flex justify-between mb-4">
+            <h3 class="font-bold text-slate-300">Segments</h3>
+            <i class="fa-solid fa-layer-group text-purple-400"></i>
+          </div>
+          <div class="chart-box">
+            <img id="chart-seg" src="/outputs/segments.png" onclick="openLightbox(this.src)" onerror="this.style.display='none'">
+          </div>
+        </div>
+
+        <div class="card p-5 md:col-span-2">
+          <div class="flex justify-between mb-4">
+            <h3 class="font-bold text-slate-300">Activity Heatmap (Week vs Hour)</h3>
+            <i class="fa-solid fa-fire text-rose-400"></i>
+          </div>
+          <div class="chart-box h-64">
+            <img id="chart-heat" src="/outputs/activity_heatmap.png" onclick="openLightbox(this.src)" onerror="this.style.display='none'">
+          </div>
+        </div>
+
+        <div class="card p-5">
+          <div class="flex justify-between mb-4">
+            <h3 class="font-bold text-slate-300">Retention</h3>
+            <i class="fa-solid fa-magnet text-cyan-400"></i>
+          </div>
+          <div class="chart-box h-64">
+            <img id="chart-ret" src="/outputs/retention.png" onclick="openLightbox(this.src)" onerror="this.style.display='none'">
+          </div>
+        </div>
+      </section>
+
+      <section id="inspector" class="card p-6 mb-10">
+        <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-700 pb-6 mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-white">User Inspector</h2>
+            <p class="text-slate-400 text-sm">Search database for user profiles and history.</p>
+          </div>
+          <form onsubmit="searchUser(event)" class="flex w-full md:w-auto gap-2">
+            <input id="search-q" type="text" placeholder="Nickname or Email..." class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 outline-none">
+            <button type="submit" class="p-2.5 px-5 text-sm font-medium text-white bg-slate-700 rounded-lg border border-slate-600 hover:bg-slate-600 focus:ring-4 focus:outline-none focus:ring-slate-700">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+          </form>
+        </div>
+        <div id="search-res" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 min-h-[150px]">
+          <div class="col-span-full flex flex-col items-center justify-center text-slate-600">
+            <i class="fa-brands fa-searchengin text-4xl mb-2 opacity-20"></i>
+            <span class="text-sm">Ready to search</span>
+          </div>
+        </div>
+      </section>
     </div>
   </main>
+
   <script>
-    const form = document.getElementById("user-form");
-    const input = document.getElementById("user-query-input");
-    const result = document.getElementById("user-result");
+    // 强制指向本地后端端口，避免文件打开模式下的跨域问题
+    const API = "http://localhost:8001";
+    const logEl = document.getElementById("console-log");
 
-    const API_BASE = window.API_BASE || ((location.port === "8000" || location.protocol === "file:") ? "http://localhost:8001" : location.origin);
-
-    // Actions
-    const btnInit = document.getElementById("btn-init");
-    const btnSim = document.getElementById("btn-sim");
-    const btnGen = document.getElementById("btn-gen");
-    const logEl = document.getElementById("actions-log");
-    let pollTimer = null;
-
-    function setLog(text) {
-      logEl.textContent = text;
+    // --- Lightbox Functions ---
+    function openLightbox(src) {
+        if (!src || src.includes('onerror')) return;
+        const lb = document.getElementById('lightbox');
+        const img = document.getElementById('lightbox-img');
+        img.src = src;
+        lb.classList.remove('hidden');
     }
 
-    async function pollStatus(taskId, label) {
-      clearInterval(pollTimer);
-      pollTimer = setInterval(async () => {
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.add('hidden');
+    }
+
+    // --- Utility Functions ---
+    function log(msg, type='info') {
+        logEl.style.display = 'block';
+        const color = type === 'error' ? 'text-red-400' : (type === 'success' ? 'text-emerald-400' : 'text-slate-300');
+        const icon = type === 'error' ? '!' : (type === 'success' ? '✓' : '>');
+        const time = new Date().toLocaleTimeString();
+        logEl.innerHTML += `<div class="${color} mb-1"><span class="opacity-50">[${time}]</span> ${icon} ${msg}</div>`;
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // --- Action Handler ---
+    async function triggerTask(endpoint, btnElement) {
+        // 1. UI Loading State
+        const originalContent = btnElement.innerHTML;
+        btnElement.disabled = true;
+        btnElement.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...`;
+
+        log(`Starting task: ${endpoint}...`, 'info');
+
         try {
-          const resp = await fetch(`${API_BASE}/api/actions/status?task_id=${taskId}`);
-          const data = await resp.json();
-          setLog(`${label}: ${data.status || "unknown"}`);
-          if (data.error) setLog(`${label}: failed - ${data.error}`);
-          if (data.status === "completed" || data.status === "failed" || data.status === "unknown") {
-            clearInterval(pollTimer);
-          }
+            // 2. 发起请求
+            const res = await fetch(`${API}/api/actions/${endpoint}`, {
+                method: 'POST',
+                // 增加 timeout 处理 (如果是纯前端 fetch 无法直接设置 timeout，这里依靠 await 等待)
+            });
+
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await res.text();
+                throw new Error(`Server Error: ${res.status} ${text.substring(0, 50)}...`);
+            }
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.detail || `HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            log(`${data.status || 'Success'} (ID: ${data.task_id || 'N/A'})`, 'success');
+
+            // 3. 特殊逻辑处理
+            if(endpoint === 'generate_dashboard') {
+                log('Rendering charts... waiting 3s', 'info');
+                setTimeout(refreshImages, 3000);
+            }
+            else if (endpoint === 'simulate_data') {
+                log('Simulation complete. Auto-generating reports now...', 'info');
+                // 模拟数据跑完后，自动触发生成报表，否则用户看不到变化
+                triggerTask('generate_dashboard', document.querySelector("button[onclick*='generate_dashboard']"));
+            }
+
         } catch (err) {
-          setLog(`Status error: ${err}`);
-          clearInterval(pollTimer);
+            console.error(err);
+            log(`FAILED: ${err.message}`, 'error');
+            if(err.message.includes("Failed to fetch")) {
+                log("Is the backend running on port 8001?", 'error');
+            }
+        } finally {
+            // 4. Restore UI
+            if(endpoint !== 'simulate_data') {
+                // 如果是 simulate data，因为我们链式调用了 generate_dashboard，
+                // 这里的 button restore 可能会被覆盖，不过为了保险起见还是恢复
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalContent;
+            } else {
+                 btnElement.disabled = false;
+                 btnElement.innerHTML = originalContent;
+            }
         }
-      }, 1500);
     }
 
-    async function trigger(path, label) {
-      setLog(`Running ${label} ...`);
-      clearInterval(pollTimer);
-      try {
-        const resp = await fetch(`${API_BASE}${path}`, { method: "POST" });
-        if (!resp.ok) throw new Error(await resp.text());
-        const data = await resp.json();
-        setLog(`${label}: ${data.status || "queued"}`);
-        if (data.task_id) {
-          pollStatus(data.task_id, label);
+    function refreshImages() {
+        const ts = new Date().getTime();
+        ['chart-trend', 'chart-dau', 'chart-seg', 'chart-heat', 'chart-ret'].forEach(id => {
+            const img = document.getElementById(id);
+            if(img) {
+                // 添加时间戳防止浏览器缓存
+                img.src = img.src.split('?')[0] + '?t=' + ts;
+                img.style.display = 'block';
+            }
+        });
+        log('Charts visuals updated.', 'success');
+    }
+
+    async function searchUser(e) {
+        e.preventDefault();
+        const q = document.getElementById("search-q").value;
+        const box = document.getElementById("search-res");
+        box.innerHTML = '<div class="col-span-full text-center text-slate-500 py-8"><i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i><br>Searching Database...</div>';
+
+        try {
+            const res = await fetch(`${API}/api/users/search?q=${encodeURIComponent(q)}`);
+            if(!res.ok) throw new Error("Search failed");
+            const data = await res.json();
+
+            if(!data.length) {
+                box.innerHTML = '<div class="col-span-full text-center text-slate-500 py-8">No users found matching query.</div>';
+                return;
+            }
+
+            // 渲染搜索结果
+            box.innerHTML = data.map(u => `
+                <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl hover:border-brand-500 transition group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-100 transition">
+                         <i class="fa-solid fa-user text-brand-500"></i>
+                    </div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-bold text-slate-200 group-hover:text-brand-400 truncate pr-4">${u.nickname}</h4>
+                    </div>
+                    <div class="space-y-1">
+                        <span class="text-xs bg-slate-900 px-2 py-1 rounded text-slate-400 border border-slate-700">ID: ${u.user_id}...</span>
+                        <div class="text-xs text-slate-400 flex items-center gap-2 mt-2">
+                            <i class="fa-regular fa-envelope w-3"></i> <span class="truncate">${u.email}</span>
+                        </div>
+                        <div class="text-xs text-slate-400 flex items-center gap-2">
+                            <i class="fa-solid fa-venus-mars w-3"></i> <span>${u.gender || 'N/A'} (${u.birth_year || '?'})</span>
+                        </div>
+                    </div>
+                </div>
+            `).join("");
+        } catch(err) {
+            box.innerHTML = `<div class="col-span-full text-center text-red-400 py-8">Error: ${err.message}</div>`;
         }
-      } catch (err) {
-        setLog(`Error on ${label}: ${err}`);
-      }
     }
-
-    btnInit.addEventListener("click", () => trigger("/api/actions/init_db", "Init DB"));
-    btnSim.addEventListener("click", () => trigger("/api/actions/simulate_data", "Simulate Data"));
-    btnGen.addEventListener("click", () => trigger("/api/actions/generate_dashboard", "Generate Dashboard"));
-
-    function renderResults(data) {
-      if (!data || data.length === 0) {
-        result.innerHTML = "<div class='result-card'>No results</div>";
-        return;
-      }
-      result.innerHTML = data.map(item => {
-        const badges = [];
-        if (item.status) badges.push(`<span class="badge">status: ${item.status}</span>`);
-        if (item.membership_status) badges.push(`<span class="badge">membership: ${item.membership_status}</span>`);
-        return `
-          <div class="result-card">
-            <h3>${item.nickname || '(no nickname)'} <span style="color:#6b7280;font-size:12px;">#${item.user_id}</span></h3>
-            <div class="result-meta">Registered: ${item.register_time || '-'} | Source: ${item.register_source || '-'}</div>
-            ${badges.join(' ')}
-            <div class="field"><strong>Email:</strong> ${item.email || '-'}</div>
-            <div class="field"><strong>Phone:</strong> ${item.phone || '-'}</div>
-            <div class="field"><strong>Region:</strong> ${item.region || '-'}</div>
-            <div class="field"><strong>Invited by:</strong> ${item.invited_by_user_id || '-'}</div>
-            <div class="field"><strong>Fav genres:</strong> ${item.fav_genres || '-'}</div>
-            <div class="field"><strong>Fav scenes:</strong> ${item.fav_scenes || '-'}</div>
-            <div class="field"><strong>Extra info:</strong> ${item.extra_info || '-'}</div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const q = input.value.trim();
-      if (!q) {
-        result.innerHTML = "<div class='result-card'>Please enter a nickname/email/phone to search.</div>";
-        return;
-      }
-      result.innerHTML = "<div class='result-card'>Searching...</div>";
-      try {
-        const resp = await fetch(`${API_BASE}/api/users/search?q=${encodeURIComponent(q)}`);
-        if (!resp.ok) throw new Error(await resp.text());
-        const data = await resp.json();
-        renderResults(data);
-      } catch (err) {
-        result.innerHTML = `<div class='result-card'>Error: ${err}</div>`;
-      }
-    });
   </script>
 </body>
 </html>

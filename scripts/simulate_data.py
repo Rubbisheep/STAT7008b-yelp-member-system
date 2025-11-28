@@ -1,166 +1,236 @@
 import random
 import sys
+import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
-
 from faker import Faker
 
+
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.append(str(ROOT))
-
-from src.music_app_system import MusicAppSystem, _utcnow  # noqa: E402
-
 
 DB_PATH = ROOT / "data" / "music.db"
-
 faker = Faker("en_US")
+
 random.seed(42)
 Faker.seed(42)
 
-GENRES = ["pop", "rock", "jazz", "hiphop", "classical", "electronic"]
-SCENES = ["study", "workout", "commute", "sleep"]
-FEEDBACK_TEXTS = [
-    "Recommendations are inaccurate",
-    "Playlist feature is handy",
-    "Please add more classical music",
-    "UI feels great",
-    "Good rhythm",
-    "Song catalog is rich",
-    "Price feels a bit high",
-]
+USER_COUNT = 3000  # number of users to simulate
+GENRES = ["Pop", "Rock", "Jazz", "HipHop", "Classical", "Electronic", "R&B", "K-Pop"]
+SCENES = ["Study", "Workout", "Commute", "Sleep", "Party", "Relax"]
 
 
-def simulate_users(system: MusicAppSystem, n: int = 800) -> list[int]:
-    user_ids = []
+def _utcnow():
+    return datetime.utcnow().isoformat(sep=" ")
+
+
+def get_conn():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA synchronous = OFF")  # speed up inserts
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def bulk_insert(conn, table, columns, data):
+    if not data: return
+    placeholders = ",".join(["?"] * len(columns))
+    col_str = ",".join(columns)
+    sql = f"INSERT INTO {table} ({col_str}) VALUES ({placeholders})"
+    batch_size = 1000
+    for i in range(0, len(data), batch_size):
+        conn.executemany(sql, data[i:i + batch_size])
+    print(f"  -> Inserted {len(data)} rows into {table}")
+
+
+def generate_users(n):
+
+    print(f"Generating {n} users ...")
+    users = []
+    user_ids = list(range(1, n + 1))
     now = datetime.utcnow()
-    for i in range(n):
-        nickname = faker.name()
-        reg_time = (now - timedelta(days=random.randint(0, 90), hours=random.randint(0, 23))).replace(
-            microsecond=0
-        ).isoformat(sep=" ")
-        user_id = system.register_user(
-            email=faker.email(),
-            phone=faker.phone_number(),
-            nickname=nickname,
-            gender=random.choice(["M", "F", None]),
-            birth_year=random.randint(1975, 2010),
-            region=faker.state(),
-            register_source=random.choice(["ads", "friend", "social_media", "search"]),
-            invited_by_user_id=random.choice(user_ids) if user_ids and random.random() < 0.2 else None,
-            register_time=reg_time,
-        )
-        user_ids.append(user_id)
-    return user_ids
+    sources = ["ads", "friend", "social", "search", "store"]
+    genders = ["M", "F", "O", None]
+
+    # trend_type: 0=stable, 1=recent surge, 2=early surge
+    trend_type = random.choice([0, 1, 1, 2])
+
+    for uid in user_ids:
+        # Determine registration time distribution based on trend type
+        if trend_type == 1:
+            # Recent surge: most users registered in the last 30 days
+            days_ago = int(random.triangular(0, 365, 0))
+        elif trend_type == 2:
+            # Early surge
+            days_ago = int(random.triangular(0, 365, 365))
+        else:
+            # Uniform distribution (exponential distribution)
+            days_ago = int(random.expovariate(1 / 150))
+            days_ago = min(days_ago, 365)
+
+        reg_time = (now - timedelta(days=days_ago, hours=random.randint(0, 23))).isoformat(sep=" ")
+
+        users.append((
+            uid,
+            faker.unique.email(),
+            faker.unique.phone_number(),
+            faker.user_name(),
+            random.choice(genders),
+            random.randint(1970, 2010),
+            faker.state(), 
+            random.choice(sources),
+            reg_time,
+            None, # No invitation code generated
+            'active',
+            _utcnow(), _utcnow()
+        ))
+    return users
 
 
-def simulate_preferences(system: MusicAppSystem, user_ids: list[int]) -> None:
-    with system._conn() as conn:
-        for uid in user_ids:
-            fav_genres = random.sample(GENRES, k=random.randint(1, 3))
-            fav_scenes = random.sample(SCENES, k=random.randint(1, 2))
-            extra = random.choice(
-                [
-                    "I enjoy melancholic songs",
-                    "I like soothing melodies",
-                    "Need strong beats for workouts",
-                    "Energizing music for commute",
-                    "Looking for sleep aid music",
-                ]
-            )
-            conn.execute(
-                """
-                INSERT INTO user_preferences (
-                    user_id, fav_genres, fav_scenes, extra_info, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    uid,
-                    ",".join(fav_genres),
-                    ",".join(fav_scenes),
-                    extra,
-                    _utcnow(),
-                    _utcnow(),
-                ),
-            )
+def generate_preferences(user_ids):
+    prefs = []
+    for uid in user_ids:
+        fav_g = random.sample(GENRES, k=random.randint(1, 3))
+        fav_s = random.sample(SCENES, k=random.randint(1, 2))
+        prefs.append((
+            uid, ",".join(fav_g), ",".join(fav_s),
+            faker.sentence(), _utcnow(), _utcnow()
+        ))
+    return prefs
 
 
-def weighted_choice(genres: list[str]) -> str:
-    weights = []
-    for g in GENRES:
-        weights.append(3 if g in genres else 1)
-    return random.choices(GENRES, weights=weights, k=1)[0]
-
-
-def simulate_listening(system: MusicAppSystem, user_ids: list[int]) -> None:
+def generate_listening_logs(users_data):
+    print("Generating logs (This may take 5-10s)...")
+    logs = []
     now = datetime.utcnow()
-    with system._conn() as conn:
-        for uid in user_ids:
-            pref_row = conn.execute(
-                "SELECT fav_genres FROM user_preferences WHERE user_id = ?", (uid,)
-            ).fetchone()
-            favs = pref_row["fav_genres"].split(",") if pref_row and pref_row["fav_genres"] else []
-            sessions = random.randint(5, 200)
-            for _ in range(sessions):
-                delta_days = random.randint(0, 60)
-                play_time = (now - timedelta(days=delta_days, hours=random.randint(0, 23))).replace(
-                    microsecond=0
-                )
-                genre = weighted_choice(favs) if favs else random.choice(GENRES)
-                conn.execute(
-                    """
-                    INSERT INTO listening_logs (
-                        user_id, play_time, duration_sec, genre, is_skipped,
-                        device_type, from_recommend, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        uid,
-                        play_time.isoformat(sep=" "),
-                        random.randint(30, 300),
-                        genre,
-                        int(random.random() < 0.05),
-                        random.choice(["mobile", "web"]),
-                        int(random.random() < 0.5),
-                        _utcnow(),
-                    ),
-                )
+
+    # 0=regular, 1=night owl (more late night), 2=commuter (more rush hours)
+    active_pattern = random.choice([0, 0, 1, 2])
+
+    for u in users_data:
+        uid = u[0]
+        reg_str = u[8]
+        birth_year = u[5]
+        reg_time = datetime.fromisoformat(reg_str)
+
+        days_active = (now - reg_time).days
+        if days_active < 1: continue
+
+        n_logs = random.randint(1,365)
+
+        for _ in range(n_logs):
+            delta_days = random.randint(0, days_active)
+
+            # Generate hour based on pattern
+            if active_pattern == 1:  
+                hour = int(random.triangular(0, 23, 23))  # Biased towards 23
+            elif active_pattern == 2:  
+                hour = random.choice([7, 8, 9, 17, 18, 19] + list(range(0, 24)))
+            else:
+                hour = random.randint(0, 23)
+
+            play_time = now - timedelta(days=delta_days, hours=0) 
+            play_time = play_time.replace(hour=hour, minute=random.randint(0, 59)) 
+
+            if play_time < reg_time: continue
+
+            logs.append((
+                uid, play_time.isoformat(sep=" "),
+                random.randint(120, 300),
+                random.choice(GENRES),  
+                1 if random.random() < 0.1 else 0,
+                random.choice(["mobile", "web"]),
+                1 if random.random() < 0.3 else 0,
+                _utcnow()
+            ))
+    return logs
 
 
-def simulate_feedbacks(system: MusicAppSystem, user_ids: list[int]) -> None:
+def generate_feedbacks(user_ids):
+    fbs = []
+    comments = [
+        "Great sound quality.", "Love the new UI.", "Too expensive.",
+        "Please add lyrics.", "Crash on startup.", "Best music app ever.",
+        "Recommendations are spot on."
+    ]
+    # Select 5% to 15% of users to provide feedback
+    target_users = random.sample(user_ids, int(len(user_ids) * random.uniform(0.05, 0.15)))
     now = datetime.utcnow()
-    with system._conn() as conn:
-        for uid in user_ids:
-            cnt = random.randint(0, 3)
-            for _ in range(cnt):
-                fb_time = (now - timedelta(days=random.randint(0, 60))).replace(microsecond=0)
-                conn.execute(
-                    """
-                    INSERT INTO feedbacks (
-                        user_id, feedback_time, rating, channel, feedback_type,
-                        comment_text, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        uid,
-                        fb_time.isoformat(sep=" "),
-                        random.randint(1, 5),
-                        random.choice(["in_app", "email"]),
-                        random.choice(["overall", "recommendation", "ui", "price"]),
-                        random.choice(FEEDBACK_TEXTS),
-                        _utcnow(),
-                    ),
-                )
+
+    for uid in target_users:
+        fbs.append((
+            uid, now.isoformat(sep=" "),
+            random.randint(1, 5),
+            "app", "general",
+            random.choice(comments),
+            _utcnow()
+        ))
+    return fbs
+
+
+def calculate_profiles_via_sql(conn):
+    print("Calculating profiles & segments...")
+    conn.execute("""
+    INSERT OR REPLACE INTO user_profiles (user_id, main_interest, churn_risk_level, last_profile_update)
+    SELECT 
+        user_id,
+        (SELECT genre FROM listening_logs l2 WHERE l2.user_id = l1.user_id GROUP BY genre ORDER BY COUNT(*) DESC LIMIT 1),
+        CASE WHEN MAX(play_time) < date('now', '-30 days') THEN 'high' ELSE 'low' END,
+        datetime('now')
+    FROM listening_logs l1
+    GROUP BY user_id
+    """)
+
+    conn.execute("DELETE FROM user_segment_membership")
+    segments = {
+        "Power User": "SELECT user_id FROM listening_logs GROUP BY user_id HAVING COUNT(*) > 30",
+        "New User": "SELECT user_id FROM users WHERE register_time > date('now', '-7 days')",
+        "Churn Risk": "SELECT user_id FROM user_profiles WHERE churn_risk_level = 'high'"
+    }
+
+    conn.execute("DELETE FROM user_segments") 
+    for name, query in segments.items():
+        conn.execute("INSERT INTO user_segments (segment_name) VALUES (?)", (name,))
+        seg_id = conn.execute("SELECT segment_id FROM user_segments WHERE segment_name=?", (name,)).fetchone()[0]
+        conn.execute(
+            f"INSERT OR IGNORE INTO user_segment_membership (user_id, segment_id, assigned_at) SELECT user_id, {seg_id}, datetime('now') FROM ({query})")
 
 
 def main():
-    system = MusicAppSystem(str(DB_PATH))
-    user_ids = simulate_users(system, n=800)
-    simulate_preferences(system, user_ids)
-    simulate_listening(system, user_ids)
-    simulate_feedbacks(system, user_ids)
-    for uid in user_ids:
-        system.classify_user_segment(uid)
-    print(f"Simulated data for {len(user_ids)} users into {DB_PATH}")
+    print(f"=== START SIMULATION: {USER_COUNT} Users ===")
+
+    users_data = generate_users(USER_COUNT)
+    user_ids = [u[0] for u in users_data]
+    prefs_data = generate_preferences(user_ids)
+    logs_data = generate_listening_logs(users_data)
+    fb_data = generate_feedbacks(user_ids)
+
+    with get_conn() as conn:
+        print("Cleaning DB...")
+        tables = ["feedback_topics", "user_segment_membership", "user_profiles", "feedbacks",
+                  "listening_logs", "user_preferences", "membership_subscriptions", "users", "user_segments"]
+        for t in tables:
+            try:
+                conn.execute(f"DELETE FROM {t}")
+            except:
+                pass
+
+        print("Inserting Data...")
+        bulk_insert(conn, "users",
+                    ["user_id", "email", "phone", "nickname", "gender", "birth_year", "region", "register_source",
+                     "register_time", "invited_by_user_id", "status", "created_at", "updated_at"], users_data)
+        bulk_insert(conn, "user_preferences",
+                    ["user_id", "fav_genres", "fav_scenes", "extra_info", "created_at", "updated_at"], prefs_data)
+        bulk_insert(conn, "listening_logs",
+                    ["user_id", "play_time", "duration_sec", "genre", "is_skipped", "device_type", "from_recommend",
+                     "created_at"], logs_data)
+        bulk_insert(conn, "feedbacks",
+                    ["user_id", "feedback_time", "rating", "channel", "feedback_type", "comment_text", "created_at"],
+                    fb_data)
+
+        calculate_profiles_via_sql(conn)
+        conn.commit()
+
+    print("=== SUCCESS: Database Refreshed with NEW Random Data! ===")
 
 
 if __name__ == "__main__":

@@ -1,12 +1,12 @@
 PRAGMA foreign_keys = ON;
 
--- Core user and membership tables
+-- Core user tables
 CREATE TABLE IF NOT EXISTS users (
   user_id            INTEGER PRIMARY KEY,
   email              TEXT,
   phone              TEXT,
   nickname           TEXT,
-  gender             TEXT,                -- 'M'/'F'/'O'/NULL
+  gender             TEXT,
   birth_year         INTEGER,
   region             TEXT,
   register_source    TEXT,
@@ -17,41 +17,18 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at         TEXT
 );
 
-CREATE TABLE IF NOT EXISTS membership_plans (
-  plan_id       INTEGER PRIMARY KEY,
-  plan_name     TEXT,
-  price_monthly REAL,
-  description   TEXT
-);
-
-CREATE TABLE IF NOT EXISTS membership_subscriptions (
-  sub_id        INTEGER PRIMARY KEY,
-  user_id       INTEGER NOT NULL,
-  plan_id       INTEGER,
-  status        TEXT,
-  start_at      TEXT,
-  end_at        TEXT,
-  auto_renew    INTEGER,
-  cancel_reason TEXT,
-  created_at    TEXT,
-  updated_at    TEXT,
-  FOREIGN KEY (user_id) REFERENCES users(user_id),
-  FOREIGN KEY (plan_id) REFERENCES membership_plans(plan_id)
-);
-
 CREATE TABLE IF NOT EXISTS user_preferences (
   user_id        INTEGER PRIMARY KEY,
-  fav_genres     TEXT,   -- comma separated: 'pop,rock,jazz'
-  fav_scenes     TEXT,   -- 'study,commute,workout'
+  fav_genres     TEXT,
+  fav_scenes     TEXT,
   dislike_genres TEXT,
-  listening_goal TEXT,
   extra_info     TEXT,
   created_at     TEXT,
   updated_at     TEXT,
   FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
--- Behaviors and feedback
+-- Logs
 CREATE TABLE IF NOT EXISTS listening_logs (
   log_id        INTEGER PRIMARY KEY,
   user_id       INTEGER NOT NULL,
@@ -78,7 +55,7 @@ CREATE TABLE IF NOT EXISTS feedbacks (
   FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
--- Profiles and segmentation
+-- Analysis Results
 CREATE TABLE IF NOT EXISTS user_profiles (
   user_id             INTEGER PRIMARY KEY,
   mbti_guess          TEXT,
@@ -112,6 +89,12 @@ CREATE TABLE IF NOT EXISTS feedback_topics (
   topic_label   TEXT NOT NULL,
   sentiment_score REAL,
   keywords        TEXT,
-  PRIMARY KEY (feedback_id, topic_label),
   FOREIGN KEY (feedback_id) REFERENCES feedbacks(feedback_id)
 );
+
+-- Indexes for Performance
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_reg_time ON users(register_time);
+CREATE INDEX IF NOT EXISTS idx_logs_user_time ON listening_logs(user_id, play_time);
+CREATE INDEX IF NOT EXISTS idx_logs_play_time ON listening_logs(play_time);
+CREATE INDEX IF NOT EXISTS idx_feedbacks_user ON feedbacks(user_id);
