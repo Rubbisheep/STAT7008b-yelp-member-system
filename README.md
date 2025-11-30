@@ -21,10 +21,13 @@ Admin and registration pages:
 1) Optional demo (register a new user, log actions, enrich profile):  
 `python -m scripts.demo`
 
-2) Build charts to `outputs/`:  
+2) Build base charts to `outputs/`:  
 `python -m scripts.generate_dashboard`
 
-3) Start the API and open the pages:  
+3) (New) Run advanced analysis to `outputs/advanced/`:  
+`python -m scripts.advanced_analysis`
+
+4) Start the API and open the pages:  
 `uvicorn api.server:app --reload --port 8001`  
 Open `http://localhost:8001/static/admin.html` (dashboard/actions) and `http://localhost:8001/static/register.html` (user sign-up).
 
@@ -36,11 +39,7 @@ Open `http://localhost:8001/static/admin.html` (dashboard/actions) and `http://l
 - `scripts/simulate_data.py` — refresh with random users, preferences, listening logs, feedback
 - `scripts/demo.py` — small end-to-end example for a single user
 - `scripts/generate_dashboard.py` — DAU, growth, segment pie, activity heatmap, retention PNGs
+- `scripts/advanced_analysis.py` — deeper analysis (behavior patterns, preferences, retention, clustering, churn model, genre similarity) to `outputs/advanced/`
 - `api/server.py` — FastAPI backend for register/search/actions (init, simulate, dashboard)
 - `static/admin.html` — admin console (PNG display, user lookup, action buttons with status)
 - `static/register.html` — user registration form
-
-## Tips
-- Run scripts as modules (`python -m scripts.xxx`) so `src` stays on the import path.
-- Recreate data anytime: `python -m scripts.init_db` then `python -m scripts.simulate_data`.
-- If you serve static files elsewhere, set `window.API_BASE` in the HTML to point to your API host/port.

@@ -22,10 +22,13 @@
 1）注册新用户、写日志、补全画像：  
 `python -m scripts.demo`
 
-2）产出图表到 `outputs/`：  
+2）产出基础图表到 `outputs/`：  
 `python -m scripts.generate_dashboard`
 
-3）启动 API 并打开页面：  
+3）（新增）高级分析到 `outputs/advanced/`：  
+`python -m scripts.advanced_analysis`
+
+4）启动 API 并打开页面：  
 `uvicorn api.server:app --reload --port 8001`  
 访问 `http://localhost:8001/static/admin.html`（管理与操作）和 `http://localhost:8001/static/register.html`（用户注册）。
 
@@ -37,11 +40,7 @@
 - `scripts/simulate_data.py` — 刷新随机用户、偏好、听歌日志、反馈
 - `scripts/demo.py` — 单用户端到端演示
 - `scripts/generate_dashboard.py` — 生成 DAU、增长、分群占比、活跃热力、留存 PNG
+- `scripts/advanced_analysis.py` — 深度分析（行为模式、偏好、留存、聚类、流失、题材相似度）输出到 `outputs/advanced/`
 - `api/server.py` — FastAPI 后端（注册/搜索/动作：init、simulate、dashboard）
 - `static/admin.html` — 管理端（展示 PNG、查用户、触发动作并轮询状态）
 - `static/register.html` — 注册页
-
-## 小贴士
-- 用模块方式运行脚本（`python -m scripts.xxx`），保证能找到 `src`。
-- 需要重置数据时：先 `python -m scripts.init_db`，再 `python -m scripts.simulate_data`。
-- 如前端放在其他域/端口，可在 HTML 里设置 `window.API_BASE` 指向实际 API。
